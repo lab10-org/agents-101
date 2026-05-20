@@ -62,3 +62,72 @@ Esto descarga todo lo que el proyecto necesita (Next.js, AI SDK, Tailwind, etc.)
 Cuando termine sin errores, ya estás listo para el siguiente paso.
 
 ---
+
+## Paso 3 — Crear el agente con metodología ReAct
+
+En este paso le vas a pedir a Claude Code que construya el agente. Vas a usar la **metodología ReAct** (*Reasoning + Acting*): el modelo razona en voz alta, llama herramientas (*tools*), observa los resultados, y decide el siguiente paso hasta resolver la tarea.
+
+Además, vas a poder **configurar el *system prompt* del agente desde la UI**, para experimentar con distintas personalidades y comportamientos sin tocar el código.
+
+### 3.1 Abrir Claude Code en el proyecto
+
+Asegúrate de estar en la carpeta del proyecto y abre Claude Code (por terminal: `claude`, o desde la extensión del IDE).
+
+### 3.2 Pegar este prompt en Claude Code
+
+Copia el siguiente bloque tal cual y pégalo en Claude Code:
+
+````markdown
+Quiero construir un agente de IA en este proyecto siguiendo la **metodología ReAct** (Reasoning + Acting), usando el **AI SDK de Vercel** con el provider de Google (Gemini) que ya está instalado.
+
+## Requisitos funcionales
+
+1. **Agente ReAct**: el modelo debe poder razonar, llamar herramientas (tools), observar el resultado y continuar el ciclo hasta dar una respuesta final.
+   - Usa `streamText` del AI SDK con `tools` y `stopWhen: stepCountIs(N)` para habilitar el loop multi-paso.
+   - **No agregues tools todavía**: deja la estructura preparada (un `agentTools` vacío y los tipos derivados con `InferUITools`) para que pueda añadir mis propias tools después sin reescribir el plomería.
+   - El modelo por defecto debe ser `gemini-2.5-flash`.
+
+2. **System prompt configurable desde la UI**:
+   - En el chat, el usuario debe poder editar el system prompt antes o durante la conversación (ej: un campo de texto colapsable arriba del chat, o un panel lateral).
+   - El system prompt se envía desde el cliente al route handler en cada request.
+   - Debe haber un **valor por defecto** razonable que explique al modelo que es un agente ReAct (sin listar tools específicas, porque todavía no hay).
+   - Cuando el usuario cambia el system prompt, debe poder **reiniciar la conversación** con un botón claro.
+
+3. **UI del chat**:
+   - Usa el hook `useChat` de `@ai-sdk/react` para conectar la UI.
+   - Muestra los mensajes del usuario y del asistente con streaming.
+   - **Deja preparada la visualización de los pasos del agente**: un renderer genérico para los `dynamic-tool` parts que muestre nombre de la tool, argumentos y resultado en un bloque expandible/colapsable. Cuando agregue tools, ya debe verse en la UI sin tocar nada.
+   - Estilo limpio con Tailwind, accesible (labels, focus states, contraste razonable).
+
+## Restricciones
+
+- Sigue las reglas del archivo `CLAUDE.md` del proyecto.
+- Usa la skill `ai-sdk` para confirmar la API actual del SDK (especialmente `streamText`, `tools`, `stopWhen`, y `useChat`).
+- Usa la skill `web-design-guidelines` para la UI del chat.
+- **No sobre-diseñes**: nada de abstracciones especulativas. Edita archivos existentes antes que crear nuevos.
+- Comentarios solo cuando el *por qué* no sea obvio.
+- Asume que `GOOGLE_GENERATIVE_AI_API_KEY` ya está en `.env.local`. Si no existe, recuérdame configurarla antes de correr el proyecto.
+
+## Entregables
+
+- Un route handler en `app/api/chat/route.ts` con el agente ReAct (sin tools por ahora) y `stopWhen` configurado.
+- Un archivo compartido (ej. `app/api/chat/agent.ts`) con el modelo, el system prompt por defecto, el objeto `agentTools` vacío y los tipos `ChatUITools` / `ChatUIMessage` derivados con `InferUITools`.
+- La UI del chat actualizada en `app/page.tsx` (o componente equivalente) con el campo para editar el system prompt y el renderer genérico de tool calls listo para cuando agregue tools.
+- Instrucciones cortas al final sobre cómo correr el proyecto (`npm run dev`) y probarlo.
+
+Antes de empezar a codificar, dame un plan corto (3-5 puntos) de los archivos que vas a tocar y por qué. Si tienes dudas sobre algún requisito, pregúntame primero.
+````
+
+### 3.3 Revisar el plan y aprobar
+
+Claude Code te va a responder con un plan corto antes de codificar. Léelo, haz preguntas si algo no te cuadra, y luego dile que proceda.
+
+### 3.4 Probar el agente
+
+Cuando Claude termine, configura tu API key (si aún no lo has hecho) en el archivo `.env.local`:
+
+`GOOGLE_GENERATIVE_AI_API_KEY=tu_api_key_aqui`
+
+Puedes obtener una API key gratis en [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+---
