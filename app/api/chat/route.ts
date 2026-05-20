@@ -1,10 +1,6 @@
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
-import {
-  agentModel,
-  agentTools,
-  DEFAULT_SYSTEM_PROMPT,
-  type ChatUIMessage,
-} from "./agent";
+import { agentModel, agentTools, type ChatUIMessage } from "./agent";
+import { DEFAULT_SYSTEM_PROMPT } from "./system-prompt";
 
 export const maxDuration = 30;
 

@@ -131,3 +131,55 @@ Cuando Claude termine, configura tu API key (si aún no lo has hecho) en el arch
 Puedes obtener una API key gratis en [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ---
+
+## Paso 4 — Agregar la tool `research_docs`
+
+Ahora le vas a dar al agente una **herramienta real**: `research_docs`. Esta tool lee un archivo `docs/knowledge_base.md` y le permite al agente responder preguntas basadas en esa base de conocimiento — el patrón mínimo de un agente con acceso a datos del proyecto.
+
+### 4.1 Crear el archivo de conocimiento
+
+Crea (o edita) `docs/knowledge_base.md` con la información que quieras que el agente conozca. Algunos ejemplos de contenido útil:
+
+- Descripción del proyecto y su stack.
+- Convenciones del equipo (estilo de código, naming, branching).
+- FAQ del producto.
+- Glosario de términos del dominio.
+
+El agente va a recibir todo el archivo cuando llame la tool, así que mantenlo enfocado (un par de páginas a lo sumo).
+
+### 4.2 Pegar este prompt en Claude Code
+
+````markdown
+Quiero agregar una nueva tool al agente que ya construimos, llamada **`research_docs`**.
+
+## Comportamiento de la tool
+
+- **Nombre**: `research_docs`.
+- **Input**: un objeto con un campo `query` (string) — una descripción corta de qué está buscando el agente.
+- **Comportamiento**: lee el archivo `docs/knowledge_base.md` desde el filesystem y devuelve su contenido completo junto con el `query` original.
+- **Errores**: si el archivo no existe o no se puede leer, devuelve un objeto `{ query, error }` en vez de tirar excepción.
+
+## Dónde hacer los cambios
+
+- Agrega la tool en `app/api/chat/agent.ts` dentro del objeto `agentTools`, manteniendo el `satisfies ToolSet` y los tipos `ChatUITools` / `ChatUIMessage` ya existentes.
+- Actualiza el `DEFAULT_SYSTEM_PROMPT` para mencionar que el agente tiene acceso a `research_docs` y cuándo usarla.
+- En `app/page.tsx`, agrega un `case "tool-research_docs"` al switch del renderer de partes, reusando el componente que ya muestra los tool calls (input + output + estado). No dupliques la UI.
+- Resuelve la ruta del archivo con `path.join(process.cwd(), "docs", "knowledge_base.md")` y lee con `node:fs/promises`.
+
+## Restricciones
+
+- Sigue las reglas del archivo `CLAUDE.md`.
+- Usa la skill `ai-sdk` si tienes dudas sobre `tool()`, `inputSchema`, o el rendering de `tool-*` parts en el cliente.
+- No agregues caching ni búsqueda fuzzy todavía — devolver el archivo completo es suficiente para esta iteración.
+- Comentarios solo si el *por qué* no es obvio.
+
+## Entregables
+
+- `app/api/chat/agent.ts` actualizado con la tool `research_docs`.
+- `app/page.tsx` actualizado para renderizar el tool call tipado.
+- Sin cambios en `route.ts` (las tools se inyectan desde `agentTools`).
+
+Antes de codificar, dame un plan corto. Si tienes dudas sobre la forma del output o cómo resolver la ruta, pregúntame.
+````
+
+---

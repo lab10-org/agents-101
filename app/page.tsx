@@ -3,10 +3,8 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRef, useState } from "react";
-import {
-  DEFAULT_SYSTEM_PROMPT,
-  type ChatUIMessage,
-} from "./api/chat/agent";
+import type { ChatUIMessage } from "./api/chat/agent";
+import { DEFAULT_SYSTEM_PROMPT } from "./api/chat/system-prompt";
 
 export default function Home() {
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -186,14 +184,12 @@ function SystemPromptPanel({
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-sm text-foreground/50">
-      <p>Empieza la conversación con el agente.</p>
-      <p className="text-xs">
-        Aún no hay herramientas configuradas; agrega tus tools en{" "}
-        <code className="rounded bg-foreground/10 px-1 py-0.5">
-          app/api/chat/agent.ts
-        </code>
-        .
-      </p>
+      <p>Empieza la conversación con el agente. Algunos ejemplos:</p>
+      <ul className="text-xs">
+        <li>&quot;¿De qué trata este proyecto?&quot;</li>
+        <li>&quot;¿Qué stack usa agents-101?&quot;</li>
+        <li>&quot;Explícame la metodología ReAct.&quot;</li>
+      </ul>
     </div>
   );
 }
@@ -246,29 +242,37 @@ function MessagePart({ part, index }: { part: Part; index: number }) {
         <hr className="my-1 border-foreground/10" />
       ) : null;
 
+    case "tool-research_docs":
+      return <ToolCallBox name="research_docs" part={part} />;
+
     case "dynamic-tool":
-      return <DynamicToolCallBox part={part} />;
+      return <ToolCallBox name={part.toolName} part={part} />;
 
     default:
       return null;
   }
 }
 
-type DynamicToolPart = Extract<Part, { type: "dynamic-tool" }>;
+type ToolPartShape = {
+  state: string;
+  input?: unknown;
+  output?: unknown;
+  errorText?: string;
+};
 
-function DynamicToolCallBox({ part }: { part: DynamicToolPart }) {
+function ToolCallBox({ name, part }: { name: string; part: ToolPartShape }) {
   return (
     <details className="rounded border border-foreground/15 bg-foreground/5 text-xs">
       <summary className="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5">
         <span className="font-mono">
-          <span className="opacity-60">tool</span> · {part.toolName}
+          <span className="opacity-60">tool</span> · {name}
         </span>
         <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
           {labelForState(part.state)}
         </span>
       </summary>
       <div className="flex flex-col gap-2 border-t border-foreground/10 px-2 py-2">
-        {"input" in part && part.input !== undefined && (
+        {part.input !== undefined && (
           <div>
             <div className="mb-1 text-[10px] uppercase tracking-wider opacity-60">
               Input
@@ -298,7 +302,7 @@ function DynamicToolCallBox({ part }: { part: DynamicToolPart }) {
   );
 }
 
-function labelForState(state: DynamicToolPart["state"]): string {
+function labelForState(state: string): string {
   switch (state) {
     case "input-streaming":
       return "preparando";

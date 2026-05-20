@@ -1,25 +1,48 @@
 import { google } from "@ai-sdk/google";
 import {
+  tool,
   type InferUITools,
   type ToolSet,
   type UIDataTypes,
   type UIMessage,
 } from "ai";
-
-export const DEFAULT_SYSTEM_PROMPT = `Eres un agente de IA que sigue la metodología ReAct (Reasoning + Acting).
-
-En cada turno:
-1. Razona explícitamente sobre lo que te piden y qué información necesitas.
-2. Si tienes herramientas disponibles y necesitas datos externos o cálculos, llama a la herramienta que aplique.
-3. Observa el resultado de la herramienta.
-4. Sigue razonando o llama otra herramienta si hace falta.
-5. Cuando tengas suficiente información, da una respuesta final clara al usuario.
-
-Responde siempre en el idioma del usuario.`;
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
 
 export const agentModel = google("gemini-2.5-flash");
 
-export const agentTools = {} satisfies ToolSet;
+const KNOWLEDGE_BASE_PATH = path.join(
+  process.cwd(),
+  "docs",
+  "knowledge_base.md",
+);
+
+export const agentTools = {
+  research_docs: tool({
+    description:
+      "Search the project knowledge base (docs/knowledge_base.md) for information relevant to a query. Returns the full document so you can extract what's relevant.",
+    inputSchema: z.object({
+      query: z
+        .string()
+        .describe("What you're looking for in the docs (1-2 line summary)."),
+    }),
+    execute: async ({ query }) => {
+      try {
+        const content = await readFile(KNOWLEDGE_BASE_PATH, "utf-8");
+        return { query, content };
+      } catch (error) {
+        return {
+          query,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to read knowledge base",
+        };
+      }
+    },
+  }),
+} satisfies ToolSet;
 
 export type ChatUITools = InferUITools<typeof agentTools>;
 export type ChatUIMessage = UIMessage<never, UIDataTypes, ChatUITools>;
